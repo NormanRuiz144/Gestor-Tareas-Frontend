@@ -4,7 +4,7 @@ const BACKEND_URL = "http://localhost:3005/tasks";
 
 export async function PUT(
   req: Request,
-  { params }: { params: { id: number } }
+  { params }: { params: { id: string } }
 ) {
   const { id } = params;
 
