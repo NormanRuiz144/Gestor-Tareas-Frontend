@@ -1,65 +1,182 @@
-import Image from "next/image";
+"use client";
+import { TaskType } from "@/types/type";
+import { getTasks, createTask, updateTask } from "./service/task.service";
+import { useState, useEffect } from "react";
+import styles from "./styles/taskStyles.module.css";
 
 export default function Home() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+  // Estados
+  const [tasks, setTasks] = useState<TaskType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDescription, setNewTaskDescription] = useState("");
+
+  // Cargar tareas al iniciar
+  useEffect(() => {
+    loadTasks();
+  }, []);
+
+  // Función para cargar tareas
+  const loadTasks = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const fetchedTasks = await getTasks();
+      setTasks(fetchedTasks);
+    } catch (err) {
+      console.error("Error al cargar tareas:", err);
+      setError("No se pudieron cargar las tareas. Intenta de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Función para agregar nueva tarea
+  const handleAddTask = async () => {
+    if (!newTaskTitle.trim() || !newTaskDescription.trim()) {
+      alert("Por favor, completa ambos campos");
+      return;
+    }
+
+    try {
+      setError(null);
+      const newTask = await createTask(newTaskTitle, newTaskDescription);
+      setTasks([...tasks, newTask]);
+      setNewTaskTitle("");
+      setNewTaskDescription("");
+
+      console.log("Tarea creada:", newTask);
+    } catch (err) {
+      console.error("Error al crear tarea:", err);
+      setError("Error al crear la tarea");
+    }
+  };
+
+  // Función para marcar como completada
+  const handleCompleteTask = async (id: number) => {
+    try {
+      setError(null);
+      console.log(`Marcando tarea ${id} como completada...`);
+
+      const updatedTask = await updateTask(id);
+      console.log("Respuesta del servidor:", updatedTask);
+
+      // Actualizar estado local
+      setTasks(
+        tasks.map((task) => (task.Id === id ? { ...task, Estado: true } : task))
+      );
+
+      console.log("Estado actualizado localmente");
+    } catch (err) {
+      console.error(`Error al actualizar tarea ${id}:`, err);
+      setError(
+        `Error al marcar como completada: ${
+          err instanceof Error ? err.message : "Error desconocido"
+        }`
+      );
+    }
+  };
+
+  // Contadores de tareas
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter((task) => task.Estado).length;
+  const pendingTasks = totalTasks - completedTasks;
+
+  if (loading) {
+    return (
+      <main style={{ padding: "2rem", textAlign: "center" }}>
+        <h1>Cargando tareas...</h1>
+        <p>Por favor espera</p>
       </main>
-    </div>
+    );
+  }
+
+  return (
+    <main className={styles["task-manager"]}>
+      <h1 className={styles["main-title"]}>Gestor de Tareas</h1>
+      {/* Mensaje de error */}
+      {error && (
+        <div className={styles["error-message"]}>
+          <strong>Error:</strong> {error}
+        </div>
+      )}
+
+      {/* Formulario para nueva tarea */}
+      <div className={styles["form-section"]}>
+        <h2 className={styles["form-title"]}>Agregar Nueva Tarea</h2>
+        <div className={styles["form-group"]}>
+          <input
+            type="text"
+            placeholder="Título de la tarea"
+            value={newTaskTitle}
+            onChange={(e) => setNewTaskTitle(e.target.value)}
+            className={styles["task-input"]}
+          />
+          <textarea
+            placeholder="Descripción"
+            value={newTaskDescription}
+            onChange={(e) => setNewTaskDescription(e.target.value)}
+            className={styles["task-textarea"]}
+          />
+          <button onClick={handleAddTask} className={styles["add-btn"]}>
+            + Agregar Tarea
+          </button>
+        </div>
+      </div>
+
+      {/* Lista de tareas */}
+      <div>
+        <h2>
+          Lista de Tareas (Total: {tasks.length}, Pendientes: {pendingTasks} y
+          Completadas: {completedTasks})
+        </h2>
+        {tasks.length === 0 ? (
+          <p className={styles["empty-task"]}>
+            No hay tareas. ¡Agrega una nueva!
+          </p>
+        ) : (
+          <ul style={{ listStyle: "none", padding: 0 }}>
+            {tasks.map((task) => (
+              <li
+                key={task.Id.toString()}
+                className={
+                  task.Estado
+                    ? styles["task-item"] + " " + styles["task-item.completed"]
+                    : styles["task-item"]
+                }
+              >
+                <h3
+                  style={{
+                    marginTop: 0,
+                    marginBottom: "0.5rem",
+                    color: task.Estado ? "#2e7d32" : "#333",
+                  }}
+                >
+                  {task.Titulo}
+                </h3>
+
+                <p className={styles["task-description"]}>{task.Descripcion}</p>
+
+                <div className={styles["task-footer"]}>
+                  {!task.Estado ? (
+                    <button
+                      onClick={() => handleCompleteTask(task.Id)}
+                      className={styles["complete-btn"]}
+                    >
+                      Marcar como Completada
+                    </button>
+                  ) : (
+                    <span className={styles["completed-status"]}>
+                      ✓ Tarea Completada
+                    </span>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </main>
   );
 }
