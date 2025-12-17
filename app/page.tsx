@@ -11,7 +11,6 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDescription, setNewTaskDescription] = useState("");
-
   // Cargar tareas al iniciar
   useEffect(() => {
     loadTasks();
