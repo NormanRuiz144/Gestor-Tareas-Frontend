@@ -2,7 +2,7 @@ import { TaskType } from "@/types/type";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3005";
 // Funcion para obtener todas las tareas
 export async function getTasks(): Promise<TaskType[]> {
-  const response = await fetch(`/api/tasks`);
+  const response = await fetch(`${API_BASE_URL}/tasks`);
   const data = await response.json();
   return data;
 }

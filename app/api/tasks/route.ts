@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-const URL_BASE = process.env.BACKEND_URL || "http://localhost:3005/tasks";
+const URL_BASE =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3005/tasks";
 
 export async function GET() {
   const response = await fetch(`${URL_BASE}`);
